@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="description"
+        content="PLA4D.">
+  <meta name="keywords" content="Nerfies, D-NeRF, NeRF">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PLA4D: Pixel-Level Alignments for Text-to-4D Gaussian Splatting</title>
+
+  <style>
+    .grid-container {
+          display: grid;
+          grid-template-columns: repeat(6, 1fr);
+          gap: 10px;
+          padding: 10px;
+      }
+      .grid-item {
+          position: relative;
+          width: 100%;
+          height: 150px; /* Adjust height as needed */
+      }
+      .grid-item img {
+          width: 100%;
+          height: 100%;
+          display: block;
+      }
+      .hover-text {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          background-color: rgba(0, 0, 0, 0.7);
+          color: white;
+          font-size: 18px;
+          opacity: 0;
+          transition: opacity 0.3s ease;
+          text-align: center;
+      }
+      .base-text {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          background-color: rgba(0, 0, 0, 0.7);
+          color: white;
+          font-size: 18px;
+          opacity: 0;
+          transition: opacity 0.3s ease;
+      }
+      .grid-item:hover .hover-text {
+          opacity: 1;
+      }
+      .grid-item:hover img {
+          opacity: 0;
+      }
+      .container-img {
+          display: grid;
+          grid-template-columns: 1fr 1fr; /* 两列等宽 */
+          gap: 10px; /* 列之间的间距 */
+      }
+      .container-img img {
+            width: 100%;
+        }
+
+  </style>
+
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-PYVRSFMDRL"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+
+    gtag('js', new Date());
+
+    gtag('config', 'G-PYVRSFMDRL');
+  </script>
+
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
+        rel="stylesheet">
+
+  <link rel="stylesheet" href="./static/css/bulma.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-carousel.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-slider.min.css">
+  <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="./static/css/index.css">
+  <link rel="icon" href="./static/images/favicon.svg">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script defer src="./static/js/fontawesome.all.min.js"></script>
+  <script src="./static/js/bulma-carousel.min.js"></script>
+  <script src="./static/js/bulma-slider.min.js"></script>
+  <script src="./static/js/index.js"></script>
+</head>
+<body>
+
+<nav class="navbar" role="navigation" aria-label="main navigation">
+  <div class="navbar-brand">
+    <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+    </a>
+  </div>
+  <div class="navbar-menu">
+    <div class="navbar-start" style="flex-grow: 1; justify-content: center;">
+      <a class="navbar-item" href="https://keunhong.com">
+      <span class="icon">
+          <i class="fas fa-home"></i>
+      </span>
+      </a>
+
+      <div class="navbar-item has-dropdown is-hoverable">
+        <a class="navbar-link">
+          More Research
+        </a>
+        <div class="navbar-dropdown">
+          <a class="navbar-item" href="https://github.com/MiaoQiaowei/DomainDiff">
+            DomainDiff
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</nav>
+
+
+<section class="hero">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+          <h1 class="title is-1 publication-title">PLA4D: Pixel-Level Alignments for Text-to-4D
+            Gaussian Splatting</h1>
+          <div class="is-size-5 publication-authors">
+            <span class="author-block">
+              <a href="">Qiaowei Miao</a><sup>1</sup>
+            </span>
+            <span class="author-block">
+              <a href="">Yawei Luo</a><sup>1*</sup>
+            </span>
+            <span class="author-block">
+              <a href="">Yi Yang</a><sup>1</sup>
+            </span>
+          </div>
+
+          <div class="is-size-5 publication-authors">
+            <span class="author-block"><sup>1</sup>Zhejiang University </span>
+            <!-- <span class="author-block"><sup>2</sup>Google Research</span> -->
+          </div>
+
+          <div class="column has-text-centered">
+            <div class="publication-links">
+              <!-- PDF Link. -->
+              <span class="link-block">
+                <a href="https://arxiv.org/pdf/2405.19957"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fas fa-file-pdf"></i>
+                  </span>
+                  <span>Paper</span>
+                </a>
+              </span>
+              <span class="link-block">
+                <a href="https://arxiv.org/abs/2405.19957"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="ai ai-arxiv"></i>
+                  </span>
+                  <span>arXiv</span>
+                </a>
+              </span>
+              <!-- Code Link. -->
+              <span class="link-block">
+                <a href=""
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fab fa-github"></i>
+                  </span>
+                  <span>Code</span>
+                  </a>
+              </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="hero teaser">
+  <div class="container is-max-desktop">
+    <div class="hero-body">
+      <div class="grid-container">
+        <div class="grid-item">
+          <img src="gifs\fox_dressed.gif" alt="GIF 1">
+          <div class="hover-text">"A fox dressed in a suite."</div>
+        </div>
+        <div class="grid-item">
+          <img src="gifs\clown_cry.gif" alt="GIF 1">
+          <div class="hover-text">"A clown is crying at a children birthday party."</div>
+        </div>
+        <div class="grid-item">
+          <img src="gifs\monkey_guitar.gif" alt="GIF 1">
+          <div class="hover-text">"A monkey is playing guitar."</div>
+        </div>
+        <div class="grid-item">
+          <img src="gifs\tiger_sleepy.gif" alt="GIF 1">
+          <div class="hover-text">"A tiger is sleepy, 4K, high quality."</div>
+        </div>
+        <div class="grid-item">
+          <img src="gifs\bear_driving.gif" alt="GIF 1">
+          <div class="hover-text">"A bear is driving."</div>
+        </div>
+        <div class="grid-item">
+          <img src="gifs\panda_ice.gif" alt="GIF 1">
+          <div class="hover-text">"A panda is eating an ice cream cone."</div>
+        </div>
+        <div class="grid-item">
+          <img src="gifs\ghost_fly.gif" alt="GIF 1">
+          <div class="hover-text">"The ghost is floating in the air."</div>
+        </div>
+        <div class="grid-item">
+          <img src="gifs\skull_wine.gif" alt="GIF 1">
+          <div class="hover-text">"A skeleton is savoring red wine."</div>
+        </div>
+        <div class="grid-item">
+          <img src="gifs\panda_dance.gif" alt="GIF 1">
+          <div class="hover-text">"A panda is dancing."</div>
+        </div>
+        <div class="grid-item">
+          <img src="gifs\panda_icecream.gif" alt="GIF 1">
+          <div class="hover-text">"A panda is eating an ice cream."</div>
+        </div>
+        <div class="grid-item">
+          <img src="gifs\squirrel_trumpet.gif" alt="GIF 1">
+          <div class="hover-text">"A squirrel is playing the trumpet."</div>
+        </div>
+        <div class="grid-item">
+          <img src="gifs\robot_violin.gif" alt="GIF 1">
+          <div class="hover-text">"A robot is playing the violin."</div>
+        </div>
+        <div class="grid-item">
+          <img src="gifs\goat_eat.gif" alt="GIF 1">
+          <div class="hover-text">"A goat is chewing."</div>
+        </div>
+        <div class="grid-item">
+          <img src="gifs\rocket_launch.gif" alt="GIF 1">
+          <div class="hover-text">"A rocket is launching."</div>
+        </div>
+        <div class="grid-item">
+          <img src="gifs\penguin_popcorn.gif" alt="GIF 1">
+          <div class="hover-text">"A penguin is eating popcorn."</div>
+        </div>
+        <div class="grid-item">
+          <img src="gifs\panda_apple.gif" alt="GIF 1">
+          <div class="hover-text">"A panda eating an apple."</div>
+        </div>
+        <div class="grid-item">
+          <img src="gifs\panda_read.gif" alt="GIF 1">
+          <div class="hover-text">"A emoji of a baby panda reading a book."</div>
+        </div>
+        <div class="grid-item">
+          <img src="gifs\monkey_milk.gif" alt="GIF 1">
+          <div class="hover-text">"A monkey is drinking milk."</div>
+        </div>
+        
+    </div>
+      <h2 class="subtitle has-text-centered">
+        <b>PLA4D</b> generates diverse, vivid, and intricate dynamic scenes while maintaining 3D consistency.
+      </h2>
+    </div>
+  </div>
+</section>
+
+
+<!-- <section class="hero is-light is-small">
+  <div class="hero-body">
+    <div class="container">
+      <div id="results-carousel" class="carousel results-carousel">
+        <div class="item item-steve">
+          <video poster="" id="steve" autoplay controls muted loop playsinline height="100%">
+            <source src="./static/videos/steve.mp4"
+                    type="video/mp4">
+          </video>
+        </div>
+        <div class="item item-chair-tp">
+          <video poster="" id="chair-tp" autoplay controls muted loop playsinline height="100%">
+            <source src="./static/videos/chair-tp.mp4"
+                    type="video/mp4">
+          </video>
+        </div>
+        <div class="item item-shiba">
+          <video poster="" id="shiba" autoplay controls muted loop playsinline height="100%">
+            <source src="./static/videos/shiba.mp4"
+                    type="video/mp4">
+          </video>
+        </div>
+        <div class="item item-fullbody">
+          <video poster="" id="fullbody" autoplay controls muted loop playsinline height="100%">
+            <source src="./static/videos/fullbody.mp4"
+                    type="video/mp4">
+          </video>
+        </div>
+        <div class="item item-blueshirt">
+          <video poster="" id="blueshirt" autoplay controls muted loop playsinline height="100%">
+            <source src="./static/videos/blueshirt.mp4"
+                    type="video/mp4">
+          </video>
+        </div>
+        <div class="item item-mask">
+          <video poster="" id="mask" autoplay controls muted loop playsinline height="100%">
+            <source src="./static/videos/mask.mp4"
+                    type="video/mp4">
+          </video>
+        </div>
+        <div class="item item-coffee">
+          <video poster="" id="coffee" autoplay controls muted loop playsinline height="100%">
+            <source src="./static/videos/coffee.mp4"
+                    type="video/mp4">
+          </video>
+        </div>
+        <div class="item item-toby">
+          <video poster="" id="toby" autoplay controls muted loop playsinline height="100%">
+            <source src="./static/videos/toby2.mp4"
+                    type="video/mp4">
+          </video>
+        </div>
+      </div>
+    </div>
+  </div>
+</section> -->
+
+
+<section class="section">
+  <div class="container is-max-desktop">
+    <!-- Abstract. -->
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <img src="./static/images/abs.jpg"
+          class="interpolation-image"
+          alt="Interpolate start reference image."/>
+        <div class="content has-text-justified">
+          <p> Figure 1: Text-to-4D synthesis results of our <b>PLA4D</b>. Top: we show the motion sequences of the
+            4D targets. Dotted lines represent the motion trajectories controlled by the deformation network at
+            different timesteps. Bottom: we present the multiple views of 4D objects at one timestep.
+          </p>
+        </div>
+        <h2 class="title is-3">Abstract</h2>
+        <div class="content has-text-justified">
+          <p>
+          As text-conditioned diffusion models (DMs) achieve breakthroughs in image, video,
+          and 3D generation, the research community’s focus has shifted to the more challenging task of text-to-4D synthesis, which introduces a temporal dimension to generate
+          dynamic 3D objects. In this context, we identify Score Distillation Sampling (SDS),
+          a widely used technique for text-to-3D synthesis, as a significant hindrance to textto-4D performance due to its Janus-faced and texture-unrealistic problems coupled
+          with high computational costs.
+          </p>
+          <p>
+          In this paper, we propose Pixel-Level Alignments
+          for Text-to-4D Gaussian Splatting (<b>PLA4D</b>), a novel method that utilizes text-tovideo frames as explicit pixel alignment targets to generate static 3D objects and
+          inject motion into them. Specifically, we introduce <b>Focal Alignment</b> to calibrate
+          camera poses for rendering and <b>GS-Mesh Contrastive Learning</b> to distill geometry
+          priors from rendered image contrasts at the pixel level. Additionally, we develop
+          <b>Motion Alignment</b> using a deformation network to drive changes in Gaussians and
+          implement <b>Reference Refinement</b> for smooth 4D object surfaces. These techniques
+          enable 4D Gaussian Splatting to align geometry, texture, and motion with generated videos at the pixel level. 
+        </p>
+        <p>
+          Compared to previous methods, <b>PLA4D</b> produces
+          synthesized outputs with better texture details in less time and effectively mitigates
+          the Janus-faced problem. <b>PLA4D</b> is fully implemented using open-source models,
+          offering an accessible, user-friendly, and promising direction for 4D digital content
+          creation.
+        </p>
+        </div>
+      </div>
+    </div>
+    <!--/ Abstract. -->
+
+    <!-- Methodology. -->
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Methodology</h2>
+        <img src="./static/images/pipeline.jpg"
+          class="interpolation-image"
+          alt="Interpolate start reference image."/>
+        
+        <div class="content has-text-justified">
+          <p> Figure 2: Pipeline of <b>PLA4D</b>. (I) <b>Text-to-Video generation</b>: generating video as the pixel-level
+          alignment targets for 3D and 4D content. (II) <b>Frame-to-3D generation</b>: applying GS-Mesh contrastive
+          learning and focal alignment for texture and geometry alignment, which constructs static 3D Gaussians
+          with correct geometry and detailed texture based on the first frame. (III) <b>3D-to-4D generation</b>: <b>PLA4D</b>
+          employs motion alignment and reference refinement methods to inject motion into 3D Gaussians.
+          </p>
+        </div>
+
+        <div class="columns is-centered">
+  
+          <!-- Visual Effects. -->
+          <div class="column">
+            <div class="content">
+              <!-- <h2 class="title is-3">Visual Effects</h2> -->
+              <img src="static\images\focal.jpg"
+                class="interpolation-image"
+                alt="focal."/>
+              <p>
+                (a) Focal Alignment
+              </p>
+            </div>
+          </div>
+          <!--/ Visual Effects. -->
+    
+          <!-- Matting. -->
+          <div class="column">
+            <!-- <h2 class="title is-3">Matting</h2> -->
+            <div class="columns is-centered">
+              <div class="column content">
+                <img src="static\images\gs-mesh.jpg"
+                class="interpolation-image"
+                alt="Interpolate start reference image."/>
+                <p>
+                  (b) GS-Mesh Contrastive Learning.
+                </p>
+                <!-- <video id="matting-video" controls playsinline height="100%">
+                  <source src="./static/videos/matting.mp4"
+                          type="video/mp4">
+                </video> -->
+              </div>
+    
+            </div>
+          </div>
+        </div>
+
+
+        <div class="content has-text-justified">
+          <!-- <div class="column">
+            <img src="static\images\abs.jpg"
+            class="interpolation-image"
+            alt="Interpolate start reference image."/>
+          </div>
+          <div class="column">
+            <img src="static\images\abs.jpg"
+            class="interpolation-image"
+            alt="Interpolate start reference image."/>
+          </div> -->
+          <p> Figure 3: Focal alignment and GS-Mesh contrastive learning in frame-to-3D stage. (a) We render
+              multiple front-view images and calculate the MSE with the first frame for searching the matched
+              focal. (b) We collect two sets of images: one of 3D Gaussians and another of mesh renderings,
+              both captured using the same random camera poses. We include the first generated frame and the
+              front-view rendering in these two sets. Then, we calculate the MSE loss, Mask loss, and LPIPS loss
+              between the corresponding images from these sets.
+          </p>
+        </div>
+      </div>
+    </div>
+    <!-- Methodology. -->
+
+
+    <!-- Experiments. -->
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Experiments</h2>
+        <img src="./static/images/show.jpg"
+          class="interpolation-image"
+          alt="Interpolate start reference image."/>
+        <div class="content has-text-justified">
+          <p>Figure 4: <b>PLA4D</b> generates more realistic targets than MAV3D and AYG by pixel-level alignments.
+            Leveraging the focal alignment method and GS-Mesh contrastive learning, <b>PLA4D</b> effectively avoids
+            multi-head issues (see Subfig.(b)) and potential geometric defects(see Subfig.(a) and Subfig.(c)),
+            thus maintaining excellent geometric configurations. After injecting motion, our proposed motion
+            alignment method effectively prevents short-term motion flicker (see Subfig.(d)), while the reference
+            refinement method prevents surface fracture caused by Gaussian points’ displacement.                       
+          </p>
+        </div>
+        <img src="./static/images/Ablation.jpg"
+          class="interpolation-image"
+          alt="Interpolate start reference image."/>
+        <div class="content has-text-justified">
+          <p>Figure 5: Ablation studies. If no focal alignment or GS-Mesh contrastive learning, the 4D object loses
+            its detailed texture and correct geometry. Without motion alignment, a 4D object degenerates into a
+            static object. Absent reference refinement, the displacement of Gaussians causes surface tearing.            
+          </p>
+        </div>
+      </div>
+    </div>
+    <!-- Experiments. -->
+
+    <!-- Conclusion. -->
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Conclusion</h2>
+        <div class="content has-text-justified">
+          <p> In this paper, we introduce <b>PLA4D</b>, a framework that leverages text-driven generated video as explicit
+            pixel alignment targets for 4D synthesis. Our approach incorporates GS-Mesh contrastive learning
+            and focal alignment, which ensures geometry consistency from the mesh and produces textures as
+            detailed as those in the generated video frames. Additionally, we have developed a novel motion
+            alignment method and reference refinement technology to optimize dynamic surfaces. Compared to
+            existing methods, <b>PLA4D</b> effectively avoids multi-head issues and generates 4D targets with rich
+            textures, accurate geometry, and smooth motion in significantly less time. Furthermore, <b>PLA4D</b>
+            is constructed entirely using existing open-source models, eliminating the need for pre-training
+            any diffusion models. This flexible architecture allows the community to freely replace or upgrade
+            components to achieve state-of-the-art performance. We aim for <b>PLA4D</b> to become an accessible,
+            user-friendly, and promising tool for 4D digital content creation.
+          </p>
+        </div>
+      </div>
+    </div>
+    <!-- Conclusion. -->
+
+
+  </div>
+</section>
+
+
+
+
+<section class="section" id="BibTeX">
+  <div class="container is-max-desktop content">
+    <h2 class="title">BibTeX</h2>
+    <pre><code>@misc{miao2024pla4d,
+      title={PLA4D: Pixel-Level Alignments for Text-to-4D Gaussian Splatting}, 
+      author={Qiaowei Miao and Yawei Luo and Yi Yang},
+      year={2024},
+      eprint={2405.19957},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV}
+}</code></pre>
+  </div>
+</section>
+
+
+<footer class="footer">
+  <div class="container">
+    <div class="content has-text-centered">
+      <a class="icon-link"
+         href="./static/videos/nerfies_paper.pdf">
+        <i class="fas fa-file-pdf"></i>
+      </a>
+      <a class="icon-link" href="https://github.com/MiaoQiaowei" class="external-link" disabled>
+        <i class="fab fa-github"></i>
+      </a>
+    </div>
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <div class="content">
+          <p>
+            This website is licensed under a <a rel="license"
+                                                href="http://creativecommons.org/licenses/by-sa/4.0/">Creative
+            Commons Attribution-ShareAlike 4.0 International License</a>.
+          </p>
+          <p>
+            This means you are free to borrow the <a
+              href="https://github.com/nerfies/nerfies.github.io">source code</a> of this website,
+            we just ask that you link back to this page in the footer.
+            Please remember to remove the analytics code included in the header of the website which
+            you do not want on your website.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
